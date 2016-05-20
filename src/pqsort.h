@@ -12,8 +12,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define PQSORT_LIMIT_PER_PROC 1
-//100
+#define PQSORT_LIMIT_PER_PROC 1000
 
 #ifdef WIN
 #ifndef __compar_fn_t
