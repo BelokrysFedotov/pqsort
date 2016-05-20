@@ -15,6 +15,12 @@
 #define PQSORT_LIMIT_PER_PROC 1
 //100
 
+#ifdef WIN
+#ifndef __compar_fn_t
+typedef int (__cdecl*__compar_fn_t)(const void*,const void*);
+#endif
+#endif
+
 void pqsort (void *__base, size_t __nmemb, size_t __size, __compar_fn_t __compar);
 
 

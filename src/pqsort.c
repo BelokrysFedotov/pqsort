@@ -32,17 +32,17 @@ inline void _merge(void *__base,void *__buffer,size_t __size, __compar_fn_t __co
 	bi = bj = pb;
 	i = pa;
 	while(aj<pb && bj<pc){
-		c = __compar(__base+__size*aj,__base+__size*bj);
+		c = __compar((char*)__base+__size*aj,(char*)__base+__size*bj);
 		if(c<=0){
 			if(bj!=bi){
-				memcpy(__buffer+__size*i,__base+__size*bi,__size*(bj-bi));
+				memcpy((char*)__buffer+__size*i,(char*)__base+__size*bi,__size*(bj-bi));
 				i += bj-bi;
 				bi = bj;
 			}
 			aj++;
 		}else{
 			if(aj!=ai){
-				memcpy(__buffer+__size*i,__base+__size*ai,__size*(aj-ai));
+				memcpy((char*)__buffer+__size*i,(char*)__base+__size*ai,__size*(aj-ai));
 				i += aj-ai;
 				ai = aj;
 			}
@@ -50,19 +50,19 @@ inline void _merge(void *__base,void *__buffer,size_t __size, __compar_fn_t __co
 		}
 	}
 	if(aj!=ai){
-		memcpy(__buffer+__size*i,__base+__size*ai,__size*(aj-ai));
+		memcpy((char*)__buffer+__size*i,(char*)__base+__size*ai,__size*(aj-ai));
 		i += aj-ai;
 		ai = aj;
 	}
 	if(bj!=bi){
-		memcpy(__buffer+__size*i,__base+__size*bi,__size*(bj-bi));
+		memcpy((char*)__buffer+__size*i,(char*)__base+__size*bi,__size*(bj-bi));
 		i += bj-bi;
 		bi = bj;
 	}
 	if(aj<pb){
 		aj = pb;
 		if(aj!=ai){
-			memcpy(__buffer+__size*i,__base+__size*ai,__size*(aj-ai));
+			memcpy((char*)__buffer+__size*i,(char*)__base+__size*ai,__size*(aj-ai));
 			i += aj-ai;
 			ai = aj;
 		}
@@ -70,7 +70,7 @@ inline void _merge(void *__base,void *__buffer,size_t __size, __compar_fn_t __co
 	if(bj<pc){
 		bj = pc;
 		if(bj!=bi){
-			memcpy(__buffer+__size*i,__base+__size*bi,__size*(bj-bi));
+			memcpy((char*)__buffer+__size*i,(char*)__base+__size*bi,__size*(bj-bi));
 			i += bj-bi;
 			bi = bj;
 		}
@@ -81,8 +81,8 @@ inline void _merge(void *__base,void *__buffer,size_t __size, __compar_fn_t __co
 
 void pqsort (void *__base, size_t __nmemb, size_t __size, __compar_fn_t __compar){
 	int i;
-	int this_thread;
-	int num_threads;
+	size_t this_thread;
+	size_t num_threads;
 	void*B1,*B2,*bt;
 	size_t np;
 	size_t pa,pb,pc;
@@ -103,7 +103,7 @@ void pqsort (void *__base, size_t __nmemb, size_t __size, __compar_fn_t __compar
 				pb = (this_thread+1) * __nmemb / num_threads;
 				pc = pb - pa;
 				//printf("%3d %3d %3d %3d\n",this_thread,pa,pb,pc);
-				qsort(__base+pa*__size,pc,__size,__compar);
+				qsort((char*)__base+pa*__size,pc,__size,__compar);
 				#pragma omp single
 				{
 					B2 = __base;
