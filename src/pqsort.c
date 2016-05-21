@@ -131,9 +131,12 @@ void pqsort (void *__base, size_t __nmemb, size_t __size, __compar_fn_t __compar
 //							printf("%d merge part %d and %d : [%lu..%lu] and [%lu..%lu] %p %p\n",this_thread,this_thread,this_thread+np,pa,pb,pb,pc,B1,B2);
 							_merge(B1,B2,__size,__compar,pa,pb,pc);
 //							printf("%d merge %d\n",this_thread,check_int_sort(B2+pa*__size,pc-pa));
+						}else{
+							pa = (this_thread+0) * __nmemb / num_threads;
+							pb = (this_thread+np) * __nmemb / num_threads;
+							if(pb>__nmemb) pb = __nmemb;
+							memcpy((char*)B2+__size*pa,(char*)B1+__size*pa,__size*(pb-pa));
 						}
-					}else{
-
 					}
 					np*=2;
 				}
@@ -158,6 +161,7 @@ void pqsort (void *__base, size_t __nmemb, size_t __size, __compar_fn_t __compar
 	#else
 		qsort(__base,__nmemb,__size,__compar);
 	#endif
+
 
 	//qsort(__base,__nmemb,__size,__compar);
 }
