@@ -15,6 +15,8 @@
 
 #include "pqsort.h"
 
+//#define DEBUG_TIME
+
 int check_int_sort(int*a,int N){
 	int i;
 	for(i=0;i+1<N;i++)
@@ -75,7 +77,6 @@ inline void _merge(void *__base,void *__buffer,size_t __size, __compar_fn_t __co
 			bi = bj;
 		}
 	}
-	//memcpy(__base+__size*pa,__buffer+__size*pa,__size*(pc-pa));
 
 }
 
@@ -86,11 +87,16 @@ void pqsort (void *__base, size_t __nmemb, size_t __size, __compar_fn_t __compar
 	void*B1,*B2,*bt;
 	size_t np;
 	size_t pa,pb,pc;
+#ifdef DEBUG_TIME
+	double*time_qsort,*time_merge;
+#endif
+
 
 	#if defined(_OPENMP)
 		#pragma omp parallel private(this_thread,num_threads,np,pa,pb,pc)
 		{
 			num_threads = omp_get_num_threads();
+
 
 			if(num_threads==0 || num_threads==1 || num_threads*PQSORT_LIMIT_PER_PROC>__nmemb){
 				#pragma omp single
@@ -102,35 +108,51 @@ void pqsort (void *__base, size_t __nmemb, size_t __size, __compar_fn_t __compar
 				pa = (this_thread+0) * __nmemb / num_threads;
 				pb = (this_thread+1) * __nmemb / num_threads;
 				pc = pb - pa;
-				//printf("%3d %3d %3d %3d\n",this_thread,pa,pb,pc);
+
+				#ifdef DEBUG_TIME
+					#pragma omp single
+					{
+						time_qsort = (double*)calloc(num_threads,sizeof(double));
+						time_merge = (double*)calloc(num_threads,sizeof(double));
+					}
+				#endif
+
+				#ifdef DEBUG_TIME
+					time_qsort[this_thread] = omp_get_wtime();
+				#endif
 				qsort((char*)__base+pa*__size,pc,__size,__compar);
+				#ifdef DEBUG_TIME
+					time_qsort[this_thread] = omp_get_wtime()-time_qsort[this_thread];
+				#endif
+
 				#pragma omp single
 				{
 					B2 = __base;
-					//B2 = malloc(__nmemb*__size);
 					B1 = calloc(__nmemb,__size);
 				}
+
+				#ifdef DEBUG_TIME
+					time_merge[this_thread] = omp_get_wtime();
+				#endif
 				np = 1;
 				while(np<num_threads){
 
 					#pragma omp barrier
 					#pragma omp single
 					{
-//						printf("%d switch %p <-> %p\n",this_thread,B1,B2);
+						//printf("%d switch %p <-> %p\n",this_thread,B1,B2);
 						bt = B1; B1 = B2; B2 = bt;
 					}
 					if(this_thread%(np*2)==0){
 						if(this_thread+np<num_threads){
-							// merge part a and b
-
 							pa = (this_thread+0) * __nmemb / num_threads;
 							pb = (this_thread+np) * __nmemb / num_threads;
 							pc = (this_thread+2*np) * __nmemb / num_threads;
 							if(pc>__nmemb) pc = __nmemb;
 
-//							printf("%d merge part %d and %d : [%lu..%lu] and [%lu..%lu] %p %p\n",this_thread,this_thread,this_thread+np,pa,pb,pb,pc,B1,B2);
+							//printf("%d merge part %d and %d : [%lu..%lu] and [%lu..%lu] %p %p\n",this_thread,this_thread,this_thread+np,pa,pb,pb,pc,B1,B2);
 							_merge(B1,B2,__size,__compar,pa,pb,pc);
-//							printf("%d merge %d\n",this_thread,check_int_sort(B2+pa*__size,pc-pa));
+							//printf("%d merge %d\n",this_thread,check_int_sort(B2+pa*__size,pc-pa));
 						}else{
 							pa = (this_thread+0) * __nmemb / num_threads;
 							pb = (this_thread+np) * __nmemb / num_threads;
@@ -140,6 +162,9 @@ void pqsort (void *__base, size_t __nmemb, size_t __size, __compar_fn_t __compar
 					}
 					np*=2;
 				}
+				#ifdef DEBUG_TIME
+					time_merge[this_thread] = omp_get_wtime()-time_merge[this_thread];
+				#endif
 
 				#pragma omp barrier
 				#pragma omp single
@@ -156,6 +181,18 @@ void pqsort (void *__base, size_t __nmemb, size_t __size, __compar_fn_t __compar
 						free(B2);
 					}
 				}
+				//				printf("%3lu merge %lfs\n",this_thread,t);
+
+
+				#ifdef DEBUG_TIME
+					printf("%3lu time for qsort=%lf\n",this_thread,time_qsort[this_thread]);
+					printf("%3lu time for merge=%lf\n",this_thread,time_merge[this_thread]);
+					#pragma omp single
+					{
+						free(time_merge);
+						free(time_qsort);
+					}
+				#endif
 			}
 		}
 	#else
